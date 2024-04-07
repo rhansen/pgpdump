@@ -8,7 +8,7 @@ typedef void (*funcptr)();
 
 private int get_new_len(int);
 private int is_partial(int);
-private void parse_packet(void);
+private int parse_packet(void);
 
 #define BINARY_TAG_FLAG 0x80
 #define NEW_TAG_FLAG    0x40
@@ -310,12 +310,16 @@ parse_packet_stream(void)
 	} else
 		set_armor();
 
+	int err = 0;
 	while (peekc() != EOF) {
-		parse_packet();
+		if (parse_packet() < 0)
+			err = -1;
 	}
+	if (err < 0)
+		warn_exit("error encountered while parsing a packet");
 }
 
-private void
+private int
 parse_packet(void)
 {
 	int c, tag, len = 0;
@@ -371,8 +375,9 @@ parse_packet(void)
 	else
 		printf("(%d bytes)\n", len);
 
+	int err = 0;
 	if (tag < TAG_NUM && tag_func[tag] != NULL)
-		(*tag_func[tag])(len);
+		err = with_read_limit(tag_func[tag], len);
 	else
 		skip(len);
 	while (partial == YES) {
@@ -386,6 +391,7 @@ parse_packet(void)
 			printf("\t(%d bytes) partial end\n", len);
 		skip(len);
 	}
+	return err;
 }
 
 public void

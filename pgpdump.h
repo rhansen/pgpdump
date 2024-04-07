@@ -45,6 +45,7 @@ public int uflag;
 public void warning(const string, ...);
 public void warn_exit(const string, ...);
 public void skip(int);
+public int skip1(int);
 public void dump(int);
 public void pdump(int);
 public void kdump(int);
@@ -59,6 +60,7 @@ public void Compressed_Data_Packet(int);
 public void set_armor(void);
 public void set_binary(void);
 
+public int with_read_limit(void (*)(int), int);
 public int peekc(void);
 public int Getc(void);
 public int Getc1(void);

@@ -156,12 +156,22 @@ main(int argc, string argv[])
 	exit(EXIT_SUCCESS);
 }
 
+public int
+skip1(int len)
+{
+	while (len-- > 0) {
+		int c = Getc1();
+		if (c < 0)
+			return c;
+	}
+	return 0;
+}
+
 public void
 skip(int len)
 {
-        int i;
-        for (i = 0; i < len; i++)
-                Getc();
+	if (skip1(len) < 0)
+		warn_exit("unexpected end of file.");
 }
 
 public void
@@ -170,9 +180,14 @@ dump(int len)
         if (gflag)
                 gdump(len);
         else {
-                int i;
-                for (i = 0; i < len; i++)
-                        printf("%02x ", Getc());
+		while (len-- > 0) {
+			int c = Getc1();
+			if (c < 0) {
+				printf("(error: data missing)");
+				return;
+			}
+			printf("%02x ", c);
+		}
         }
 }
 

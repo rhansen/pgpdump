@@ -415,7 +415,8 @@ multi_precision_integer(string str)
 		dump(bytes);
 	} else {
 		printf("...");
-		skip(bytes);
+		if (skip1(bytes) < 0)
+			printf(" (error: data missing)");
 	}
 	printf("\n");
 }

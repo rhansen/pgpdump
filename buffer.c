@@ -8,6 +8,14 @@
 
 typedef char * cast_t;
 
+struct read_limit {
+	ssize_t end;
+	int exceeded;
+	struct read_limit *next;
+};
+struct read_limit *read_limit = NULL;
+ssize_t read_limit_pos = 0;
+
 private int line_not_blank(byte *);
 private int read_binary(byte *, unsigned int);
 private int read_radix64(byte *, unsigned int);
@@ -307,6 +315,19 @@ inflate_bzip2(byte *p, unsigned int max)
 #endif /* HAVE_LIBBZ2 */
 
 public int
+with_read_limit(void (*fn)(int), int len)
+{
+	struct read_limit lim = {.end=read_limit_pos + len, .exceeded=0, .next=read_limit};
+	if (!read_limit || lim.end < read_limit->end)
+		read_limit = &lim;
+	(*fn)(len);
+	int err = read_limit->exceeded ? -1 : 0;
+	if (read_limit == &lim)
+		read_limit = read_limit->next;
+	return err;
+}
+
+public int
 peekc(void)
 {
 	int c = Getc1();
@@ -323,6 +344,11 @@ Getc1(void)
 {
 	byte c;
 
+	if (read_limit && read_limit_pos >= read_limit->end) {
+		read_limit->exceeded = 1;
+		return EOF;
+	}
+
 	if (AVAIL_COUNT == 0) {
 		AVAIL_COUNT = (*d_func3)(d_buf3, sizeof(d_buf3));
 		if (AVAIL_COUNT == 0)
@@ -330,6 +356,7 @@ Getc1(void)
 		NEXT_IN = d_buf3;
 	}
 
+	read_limit_pos++;
 	AVAIL_COUNT--;
 	MAGIC_COUNT++;
 	c = *NEXT_IN;
