@@ -82,7 +82,7 @@ private int
 read_binary(byte *p, unsigned int max)
 {
 	if (feof(stdin)) {
-		exit(EXIT_SUCCESS);
+		return 0;
 	}
 
 	size_t ret = fread(p, sizeof(byte), max, stdin);

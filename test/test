@@ -16,10 +16,14 @@ i=0
 do_test() {
 	want=$1
 	in=${want%.res}
+	want_err=false
+	case ${in} in *.want_err) want_err=true;; esac
+	got_err=false
 	# Command substitution strips all trailing newlines.  Echo a character to be stripped later
 	# so that all trailing newlines are preserved for accurate stdout comparison.
-	got=$("${PGPDUMP}" -u <${in} && pecho x) || {
-		log "pgpdump exited with non-zero status $?"
+	got=$("${PGPDUMP}" -u <${in} && pecho x) || got_err=true
+	[ "${got_err}" = "${want_err}" ] || {
+		log "unexpected exit status (got error: ${got_err}, want error: ${want_err})"
 		return 1
 	}
 	got=${got%x}
