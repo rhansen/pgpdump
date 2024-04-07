@@ -287,6 +287,8 @@ parse_packet(void)
 	int have_packet = NO;
 
 	c = getchar();
+	if (c == EOF)
+		return;
 	ungetc(c, stdin);
 
 	/* 2024-01-20 If the first byte is all zeros, then whatever
