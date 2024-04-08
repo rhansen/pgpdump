@@ -307,6 +307,18 @@ inflate_bzip2(byte *p, unsigned int max)
 #endif /* HAVE_LIBBZ2 */
 
 public int
+peekc(void)
+{
+	int c = Getc1();
+	if (c >= 0) {
+		AVAIL_COUNT++;
+		MAGIC_COUNT--;
+		NEXT_IN--;
+	}
+	return c;
+}
+
+public int
 Getc1(void)
 {
 	byte c;

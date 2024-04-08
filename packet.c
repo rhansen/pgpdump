@@ -8,6 +8,7 @@ typedef void (*funcptr)();
 
 private int get_new_len(int);
 private int is_partial(int);
+private void parse_packet(void);
 
 #define BINARY_TAG_FLAG 0x80
 #define NEW_TAG_FLAG    0x40
@@ -280,11 +281,9 @@ is_partial(int c)
 }
 
 public void
-parse_packet(void)
+parse_packet_stream(void)
 {
-	int c, tag, len = 0;
-	int partial = NO;
-	int have_packet = NO;
+	int c;
 
 	c = getchar();
 	if (c == EOF)
@@ -311,77 +310,82 @@ parse_packet(void)
 	} else
 		set_armor();
 
-	while ((c = Getc1()) != EOF) {
-		have_packet = YES;
-		partial = NO;
-		tag = c & TAG_MASK;
-		if (c & NEW_TAG_FLAG) {
-			printf("New: ");
-			c = Getc();
-			len = get_new_len(c);
-			partial = is_partial(c);
-		} else {
-			int tlen;
-
-			printf("Old: ");
-			tlen = c & OLD_LEN_MASK;
-			tag >>= OLD_TAG_SHIFT;
-
-			switch (tlen) {
-			case 0:
-				len = Getc();
-				break;
-			case 1:
-				len = (Getc() << 8);
-				len += Getc();
-				break;
-			case 2:
-			        len = Getc() << 24;
-			        len |= Getc() << 16;
-			        len |= Getc() << 8;
-			        len |= Getc();
-				break;
-			case 3:
-				if (tag == TAG_COMPRESSED)
-					len = 0;
-				else
-					len = EOF;
-				break;
-			}
-		}
-		if (tag < TAG_NUM)
-			printf("%s(tag %d)", TAG[tag], tag);
-		else
-			printf("unknown(tag %d)", tag);
-
-		if (partial == YES)
-			printf("(%d bytes) partial start\n", len);
-		else if (tag == TAG_COMPRESSED)
-			printf("\n");
-		else if (len == EOF)
-			printf("(until eof)\n");
-		else
-			printf("(%d bytes)\n", len);
-
-		if (tag < TAG_NUM && tag_func[tag] != NULL)
-			(*tag_func[tag])(len);
-		else
-			skip(len);
-		while (partial == YES) {
-			printf("New: ");
-			c = Getc();
-			len = get_new_len(c);
-			partial = is_partial(c);
-			if (partial == YES)
-				printf("\t(%d bytes) partial continue\n", len);
-			else
-				printf("\t(%d bytes) partial end\n", len);
-			skip(len);
-		}
-		if (len == EOF) return;
+	while (peekc() != EOF) {
+		parse_packet();
 	}
-	if ( have_packet == NO )
-		warn_exit("unexpected end of file.");
+}
+
+private void
+parse_packet(void)
+{
+	int c, tag, len = 0;
+	int partial = NO;
+
+	c = Getc();
+	tag = c & TAG_MASK;
+	if (c & NEW_TAG_FLAG) {
+		printf("New: ");
+		c = Getc();
+		len = get_new_len(c);
+		partial = is_partial(c);
+	} else {
+		int tlen;
+
+		printf("Old: ");
+		tlen = c & OLD_LEN_MASK;
+		tag >>= OLD_TAG_SHIFT;
+
+		switch (tlen) {
+		case 0:
+			len = Getc();
+			break;
+		case 1:
+			len = (Getc() << 8);
+			len += Getc();
+			break;
+		case 2:
+			len = Getc() << 24;
+			len |= Getc() << 16;
+			len |= Getc() << 8;
+			len |= Getc();
+			break;
+		case 3:
+			if (tag == TAG_COMPRESSED)
+				len = 0;
+			else
+				len = EOF;
+			break;
+		}
+	}
+	if (tag < TAG_NUM)
+		printf("%s(tag %d)", TAG[tag], tag);
+	else
+		printf("unknown(tag %d)", tag);
+
+	if (partial == YES)
+		printf("(%d bytes) partial start\n", len);
+	else if (tag == TAG_COMPRESSED)
+		printf("\n");
+	else if (len == EOF)
+		printf("(until eof)\n");
+	else
+		printf("(%d bytes)\n", len);
+
+	if (tag < TAG_NUM && tag_func[tag] != NULL)
+		(*tag_func[tag])(len);
+	else
+		skip(len);
+	while (partial == YES) {
+		printf("New: ");
+		c = Getc();
+		len = get_new_len(c);
+		partial = is_partial(c);
+		if (partial == YES)
+			printf("\t(%d bytes) partial continue\n", len);
+		else
+			printf("\t(%d bytes) partial end\n", len);
+		skip(len);
+	}
 }
 
 public void

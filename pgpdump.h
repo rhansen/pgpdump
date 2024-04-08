@@ -59,6 +59,7 @@ public void Compressed_Data_Packet(int);
 public void set_armor(void);
 public void set_binary(void);
 
+public int peekc(void);
 public int Getc(void);
 public int Getc1(void);
 public int Getc_getlen(void);
@@ -68,7 +69,7 @@ public void Getc_resetlen(void);
  *  packet.c
  */
 
-public void parse_packet(void);
+public void parse_packet_stream(void);
 public void parse_signature_subpacket(string, int);
 public void parse_userattr_subpacket(string, int);
 

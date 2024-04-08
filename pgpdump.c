@@ -152,7 +152,7 @@ main(int argc, string argv[])
 			warn_exit("can't open %s.", target);
         }
 
-	parse_packet();
+	parse_packet_stream();
 	exit(EXIT_SUCCESS);
 }
 
